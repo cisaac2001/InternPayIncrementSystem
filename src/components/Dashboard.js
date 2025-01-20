@@ -8,6 +8,7 @@ function Dashboard() {
   const [editMode, setEditMode] = useState(null); // To track which row is being edited
   const [editedEmployee, setEditedEmployee] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // Add sorting state
 
   useEffect(() => {
     fetch("http://localhost:5000/api/employees")
@@ -73,6 +74,22 @@ function Dashboard() {
     )
   );
 
+  // Sorting function
+  const sortData = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+
+    const sortedEmployees = [...employees].sort((a, b) => {
+      if (a[key] < b[key]) return direction === 'asc' ? -1 : 1;
+      if (a[key] > b[key]) return direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+    setEmployees(sortedEmployees);
+  };
+
   return (
     <div>
       <h1>Employee Dashboard</h1>
@@ -87,23 +104,23 @@ function Dashboard() {
       <table border="1" cellPadding="10">
         <thead>
           <tr>
-            <th>Employee ID</th>
-            <th>Entity</th>
-            <th>Name</th>
-            <th>Date of Joining</th>
-            <th>Employment Type</th>
-            <th>Designation</th>
-            <th>Location</th>
-            <th>Team</th>
-            <th>Job Function</th>
-            <th>Manager Name</th>
-            <th>ManCom</th>
-            <th>Current Salary (Local)</th>
-            <th>Current Salary (USD)</th>
-            <th>KPI Rating</th>
-            <th>Values Rating</th>
-            <th>Final Rating</th>
-            <th>Increment Eligible</th>
+            <th onClick={() => sortData('EmployeeID')}>Employee ID</th>
+            <th onClick={() => sortData('Entity')}>Entity</th>
+            <th onClick={() => sortData('Name')}>Name</th>
+            <th onClick={() => sortData('DateOfJoining')}>Date of Joining</th>
+            <th onClick={() => sortData('EmploymentType')}>Employment Type</th>
+            <th onClick={() => sortData('Designation')}>Designation</th>
+            <th onClick={() => sortData('Location')}>Location</th>
+            <th onClick={() => sortData('Team')}>Team</th>
+            <th onClick={() => sortData('JobFunction')}>Job Function</th>
+            <th onClick={() => sortData('ManagerName')}>Manager Name</th>
+            <th onClick={() => sortData('ManCom')}>ManCom</th>
+            <th onClick={() => sortData('CurrentSalaryLocal')}>Current Salary (Local)</th>
+            <th onClick={() => sortData('CurrentSalaryUSD')}>Current Salary (USD)</th>
+            <th onClick={() => sortData('KPIRating')}>KPI Rating</th>
+            <th onClick={() => sortData('ValuesRating')}>Values Rating</th>
+            <th onClick={() => sortData('FinalRating')}>Final Rating</th>
+            <th onClick={() => sortData('IncrementEligible')}>Increment Eligible</th>
             <th>Remarks</th>
             <th>Actions</th>
           </tr>
@@ -312,7 +329,7 @@ function Dashboard() {
                     onChange={handleChange}
                   />
                 ) : (
-                  employee.IncrementEligible ? 'Yes' : 'No'
+                  employee.IncrementEligible
                 )}
               </td>
               <td>
@@ -329,12 +346,12 @@ function Dashboard() {
               </td>
               <td>
                 {editMode === employee.EmployeeID ? (
-                  <>
-                    <button onClick={() => handleSave(employee.EmployeeID)}>Save</button>
-                    <button onClick={handleCancel}>Cancel</button>
-                  </>
+                  <button onClick={() => handleSave(employee.EmployeeID)}>Save</button>
                 ) : (
                   <button onClick={() => handleEdit(employee)}>Edit</button>
+                )}
+                {editMode === employee.EmployeeID && (
+                  <button onClick={handleCancel}>Cancel</button>
                 )}
               </td>
             </tr>
