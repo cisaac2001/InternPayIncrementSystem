@@ -9,6 +9,34 @@ function Dashboard() {
   const [editedEmployee, setEditedEmployee] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' }); // Add sorting state
+  const [columnVisibility, setColumnVisibility] = useState({
+    EmployeeID: true,
+    Entity: true,
+    Name: true,
+    DateOfJoining: true,
+    EmploymentType: true,
+    Designation: true,
+    Location: true,
+    Team: true,
+    JobFunction: true,
+    ManagerName: true,
+    ManCom: true,
+    CurrentSalaryLocal: true,
+    CurrentSalaryUSD: true,
+    KPIRating: true,
+    ValuesRating: true,
+    FinalRating: true,
+    IncrementEligible: true,
+    Remarks: true,
+  });
+
+  const toggleColumnVisibility = (column) => {
+    setColumnVisibility((prevVisibility) => ({
+      ...prevVisibility,
+      [column]: !prevVisibility[column],
+    }));
+  };  
+  
 
   useEffect(() => {
     fetch("http://localhost:5000/api/employees")
@@ -101,33 +129,84 @@ function Dashboard() {
         onChange={(e) => setSearchQuery(e.target.value)}
       />
       <FileUpload />
+
+      {/* Column Visibility Controls */}
+      <div>
+        <h3>Toggle Column Visibility</h3>
+        {Object.keys(columnVisibility).map((column) => (
+          <label key={column}>
+            <input
+              type="checkbox"
+              checked={columnVisibility[column]}
+              onChange={() => toggleColumnVisibility(column)}
+            />
+            {column}
+          </label>
+        ))}
+      </div>
+
       <table border="1" cellPadding="10">
         <thead>
           <tr>
-            <th onClick={() => sortData('EmployeeID')}>Employee ID</th>
-            <th onClick={() => sortData('Entity')}>Entity</th>
-            <th onClick={() => sortData('Name')}>Name</th>
-            <th onClick={() => sortData('DateOfJoining')}>Date of Joining</th>
-            <th onClick={() => sortData('EmploymentType')}>Employment Type</th>
-            <th onClick={() => sortData('Designation')}>Designation</th>
-            <th onClick={() => sortData('Location')}>Location</th>
-            <th onClick={() => sortData('Team')}>Team</th>
-            <th onClick={() => sortData('JobFunction')}>Job Function</th>
-            <th onClick={() => sortData('ManagerName')}>Manager Name</th>
-            <th onClick={() => sortData('ManCom')}>ManCom</th>
-            <th onClick={() => sortData('CurrentSalaryLocal')}>Current Salary (Local)</th>
-            <th onClick={() => sortData('CurrentSalaryUSD')}>Current Salary (USD)</th>
-            <th onClick={() => sortData('KPIRating')}>KPI Rating</th>
-            <th onClick={() => sortData('ValuesRating')}>Values Rating</th>
-            <th onClick={() => sortData('FinalRating')}>Final Rating</th>
-            <th onClick={() => sortData('IncrementEligible')}>Increment Eligible</th>
-            <th>Remarks</th>
+            {columnVisibility.EmployeeID && (
+              <th onClick={() => sortData('EmployeeID')}>Employee ID</th>
+            )}
+            {columnVisibility.Entity && (
+              <th onClick={() => sortData('Entity')}>Entity</th>
+            )}
+            {columnVisibility.Name && (
+              <th onClick={() => sortData('Name')}>Name</th>
+            )}
+            {columnVisibility.DateOfJoining && (
+              <th onClick={() => sortData('DateOfJoining')}>Date of Joining</th>
+            )}
+            {columnVisibility.EmploymentType && (
+              <th onClick={() => sortData('EmploymentType')}>Employment Type</th>
+            )}
+            {columnVisibility.Designation && (
+              <th onClick={() => sortData('Designation')}>Designation</th>
+            )}
+            {columnVisibility.Location && (
+              <th onClick={() => sortData('Location')}>Location</th>
+            )}
+            {columnVisibility.Team && (
+              <th onClick={() => sortData('Team')}>Team</th>
+            )}
+            {columnVisibility.JobFunction && (
+              <th onClick={() => sortData('JobFunction')}>Job Function</th>
+            )}
+            {columnVisibility.ManagerName && (
+              <th onClick={() => sortData('ManagerName')}>Manager Name</th>
+            )}
+            {columnVisibility.ManCom && (
+              <th onClick={() => sortData('ManCom')}>ManCom</th>
+            )}
+            {columnVisibility.CurrentSalaryLocal && (
+              <th onClick={() => sortData('CurrentSalaryLocal')}>Current Salary (Local)</th>
+            )}
+            {columnVisibility.CurrentSalaryUSD && (
+              <th onClick={() => sortData('CurrentSalaryUSD')}>Current Salary (USD)</th>
+            )}
+            {columnVisibility.KPIRating && (
+              <th onClick={() => sortData('KPIRating')}>KPI Rating</th>
+            )}
+            {columnVisibility.ValuesRating && (
+              <th onClick={() => sortData('ValuesRating')}>Values Rating</th>
+            )}
+            {columnVisibility.FinalRating && (
+              <th onClick={() => sortData('FinalRating')}>Final Rating</th>
+            )}
+            {columnVisibility.IncrementEligible && (
+              <th onClick={() => sortData('IncrementEligible')}>Increment Eligible</th>
+            )}
+            {columnVisibility.Remarks && <th>Remarks</th>}
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {filteredEmployees.map((employee) => (
-            <tr key={`${employee.EmployeeID}-${employee.Name}`}>
+        {filteredEmployees.map((employee) => (
+          <tr key={`${employee.EmployeeID}-${employee.Name}`}>
+            {columnVisibility.EmployeeID && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -140,6 +219,8 @@ function Dashboard() {
                   employee.EmployeeID
                 )}
               </td>
+            )}
+            {columnVisibility.Entity && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -152,6 +233,8 @@ function Dashboard() {
                   employee.Entity
                 )}
               </td>
+            )}
+            {columnVisibility.Name && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -164,6 +247,8 @@ function Dashboard() {
                   employee.Name
                 )}
               </td>
+            )}
+            {columnVisibility.DateOfJoining && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -176,6 +261,8 @@ function Dashboard() {
                   employee.DateOfJoining
                 )}
               </td>
+            )}
+            {columnVisibility.EmploymentType && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -188,6 +275,8 @@ function Dashboard() {
                   employee.EmploymentType
                 )}
               </td>
+            )}
+            {columnVisibility.Designation && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -200,6 +289,8 @@ function Dashboard() {
                   employee.Designation
                 )}
               </td>
+            )}
+            {columnVisibility.Location && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -212,6 +303,8 @@ function Dashboard() {
                   employee.Location
                 )}
               </td>
+            )}
+            {columnVisibility.Team && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -224,6 +317,8 @@ function Dashboard() {
                   employee.Team
                 )}
               </td>
+            )}
+            {columnVisibility.JobFunction && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -236,6 +331,8 @@ function Dashboard() {
                   employee.JobFunction
                 )}
               </td>
+            )}
+            {columnVisibility.ManagerName && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -248,6 +345,8 @@ function Dashboard() {
                   employee.ManagerName
                 )}
               </td>
+            )}
+            {columnVisibility.ManCom && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -260,6 +359,8 @@ function Dashboard() {
                   employee.ManCom
                 )}
               </td>
+            )}
+            {columnVisibility.CurrentSalaryLocal && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -272,6 +373,8 @@ function Dashboard() {
                   employee.CurrentSalaryLocal
                 )}
               </td>
+            )}
+            {columnVisibility.CurrentSalaryUSD && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -284,6 +387,8 @@ function Dashboard() {
                   employee.CurrentSalaryUSD
                 )}
               </td>
+            )}
+            {columnVisibility.KPIRating && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -296,6 +401,8 @@ function Dashboard() {
                   employee.KPIRating
                 )}
               </td>
+            )}
+            {columnVisibility.ValuesRating && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -308,6 +415,8 @@ function Dashboard() {
                   employee.ValuesRating
                 )}
               </td>
+            )}
+            {columnVisibility.FinalRating && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -320,6 +429,8 @@ function Dashboard() {
                   employee.FinalRating
                 )}
               </td>
+            )}
+            {columnVisibility.IncrementEligible && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -329,9 +440,11 @@ function Dashboard() {
                     onChange={handleChange}
                   />
                 ) : (
-                  employee.IncrementEligible
+                  employee.IncrementEligible ? 'Yes' : 'No'
                 )}
               </td>
+            )}
+            {columnVisibility.Remarks && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
@@ -344,6 +457,7 @@ function Dashboard() {
                   employee.Remarks
                 )}
               </td>
+            )}
               <td>
                 {editMode === employee.EmployeeID ? (
                   <button onClick={() => handleSave(employee.EmployeeID)}>Save</button>
