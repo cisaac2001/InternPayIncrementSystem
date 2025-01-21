@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import * as XLSX from 'xlsx';
 import FileUpload from './FileUpload';
 import CurrencyTable from "./CurrencyTable";
+import MarketProjections from "./MarketProjections";
 
 function Dashboard() {
   const [employees, setEmployees] = useState([]);
@@ -21,6 +22,7 @@ function Dashboard() {
     JobFunction: true,
     ManagerName: true,
     ManCom: true,
+    SalaryCode: true,
     CurrentSalaryLocal: true,
     CurrentSalaryUSD: true,
     KPIRating: true,
@@ -42,6 +44,7 @@ function Dashboard() {
     fetch("http://localhost:5000/api/employees")
       .then((response) => response.json())
       .then((data) => {
+        console.log(data);
         setEmployees(data); // Set the data to state
       })
       .catch((error) => console.error(error));
@@ -122,6 +125,7 @@ function Dashboard() {
     <div>
       <h1>Employee Dashboard</h1>
       <CurrencyTable />
+      <MarketProjections />
       <input
         type="text"
         placeholder="Search employees..."
@@ -180,6 +184,9 @@ function Dashboard() {
             )}
             {columnVisibility.ManCom && (
               <th onClick={() => sortData('ManCom')}>ManCom</th>
+            )}
+            {columnVisibility.SalaryCode && (
+              <th onClick={() => sortData('SalaryCode')}>Salary Code</th>
             )}
             {columnVisibility.CurrentSalaryLocal && (
               <th onClick={() => sortData('CurrentSalaryLocal')}>Current Salary (Local)</th>
@@ -357,6 +364,20 @@ function Dashboard() {
                   />
                 ) : (
                   employee.ManCom
+                )}
+              </td>
+            )}
+            {columnVisibility.SalaryCode && (
+              <td>
+                {editMode === employee.EmployeeID ? (
+                  <input
+                    type="text"
+                    name="SalaryCode"
+                    value={editedEmployee.SalaryCode || employee.SalaryCode || ""}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  employee.SalaryCode
                 )}
               </td>
             )}

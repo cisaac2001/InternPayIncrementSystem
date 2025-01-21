@@ -98,15 +98,15 @@ function insertData(mappedData) {
     const query = `
       INSERT INTO employees (
         EmployeeID, Entity, Name, DateOfJoining, EmploymentType, Designation,
-        Location, Team, JobFunction, ManagerName, ManCom,
+        Location, Team, JobFunction, ManagerName, ManCom, SalaryCode,
         CurrentSalaryLocal, CurrentSalaryUSD, KPIRating, ValuesRating,
         FinalRating, IncrementEligible, Remarks
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
       row.EmployeeID, row.Entity, row.Name, row.DateOfJoining, row.EmploymentType, row.Designation,
-      row.Location, row.Team, row.JobFunction, row.ManagerName, row.ManCom,
+      row.Location, row.Team, row.JobFunction, row.ManagerName, row.ManCom, row.SalaryCode,
       row.CurrentSalaryLocal, row.CurrentSalaryUSD, row.KPIRating, row.ValuesRating,
       row.FinalRating, row.IncrementEligible, row.Remarks,
     ];
@@ -169,6 +169,7 @@ const headerMapping = {
   'Job function': 'JobFunction',
   'Reporting Manager Name': 'ManagerName',
   'ManCom': 'ManCom',
+  'Current Monthly Base Salary (Payroll Currency)': 'SalaryCode',
   'Current Monthly Base Salary (Payroll Currency)': 'CurrentSalaryLocal',
   'Current Monthly Base Salary (USD)': 'CurrentSalaryUSD',
   'Rating (KPI/Goals)': 'KPIRating',
@@ -236,6 +237,7 @@ app.put('/api/employees/:id', (req, res) => {
     JobFunction,
     ManagerName,
     ManCom,
+    SalaryCode,
     CurrentSalaryLocal,
     CurrentSalaryUSD,
     KPIRating,
@@ -258,7 +260,8 @@ app.put('/api/employees/:id', (req, res) => {
       Team = ?, 
       JobFunction = ?, 
       ManagerName = ?, 
-      ManCom = ?, 
+      ManCom = ?,
+      SalaryCode = ?, 
       CurrentSalaryLocal = ?, 
       CurrentSalaryUSD = ?, 
       KPIRating = ?, 
@@ -279,7 +282,8 @@ app.put('/api/employees/:id', (req, res) => {
     Team, 
     JobFunction, 
     ManagerName, 
-    ManCom, 
+    ManCom,
+    SalaryCode, 
     CurrentSalaryLocal, 
     CurrentSalaryUSD, 
     KPIRating, 
@@ -298,3 +302,95 @@ app.put('/api/employees/:id', (req, res) => {
   });
 });
 
+app.get('/api/projections', (req, res) => {
+  console.log('Received request for projections');
+  
+  // Check if the connection is established
+  if (!db) {
+    console.error('Database connection not established');
+    return res.status(500).send('Database connection not established');
+  }
+
+  const query = 'SELECT * FROM market_projections';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching projections:', err);
+      return res.status(500).send('Error fetching projections');
+    }
+
+    // Log the results to see what is being returned
+    console.log('Fetched projections:', results);
+
+    // Check if results are empty
+    if (results.length === 0) {
+      console.warn('No projections found in the database');
+      return res.status(404).send('No projections found');
+    }
+
+    res.json(results); // Send the results as JSON
+  });
+});
+
+// Endpoint to update a conversion rate
+app.put('/api/projections/:id', (req, res) => {
+  const { id } = req.params; // Get the id from the URL parameter
+  const { Designation, Location, SalaryCode, MarketSalaryBenchmark } = req.body;
+
+  if (!id) {
+    return res.status(400).send('Missing id in request');
+  }
+
+  // Check if 'id' is valid and exists
+  console.log(`Updating projection with ID: ${id}`);
+
+  const query = 'UPDATE market_projections SET Designation = ?, Location = ?, SalaryCode = ?, MarketSalaryBenchmark = ? WHERE id = ?';
+  
+  // If your database column name is not 'id', replace it with the correct column name
+  db.query(query, [Designation, Location, SalaryCode, MarketSalaryBenchmark, id], (err, result) => {
+    if (err) {
+      console.error('Error updating market projection:', err);
+      return res.status(500).send({ message: 'Error updating market projection' });
+    }
+
+    res.status(200).send({ message: 'Market projection updated successfully' });
+  });
+});
+
+// Endpoint to add a new projection
+app.post('/api/projections', (req, res) => {
+  const { Designation, Location, SalaryCode, MarketSalaryBenchmark } = req.body;
+  const query = 'INSERT INTO market_projections (Designation, Location, SalaryCode, MarketSalaryBenchmark) VALUES (?, ?, ?, ?)';
+  db.query(query, [Designation, Location, SalaryCode, MarketSalaryBenchmark], (err, result) => {
+    if (err) {
+      console.error('Error adding projection:', err);
+      return res.status(500).send('Error adding projection');
+    }
+    // Return the newly created projection (with an auto-generated ID)
+    res.status(201).json({
+      id: result.insertId,
+      Designation,
+      Location,
+      SalaryCode,
+      MarketSalaryBenchmark,
+    });
+  });
+});
+
+// Endpoint to delete a projection
+app.delete('/api/projections/:id', (req, res) => {
+  const { id } = req.params;
+  const query = 'DELETE FROM market_projections WHERE id = ?';
+  db.query(query, [id], (err, result) => {
+    if (err) {
+      console.error('Error deleting projection:', err);
+      return res.status(500).send('Error deleting projection');
+    }
+
+    // Check if any row was deleted
+    if (result.affectedRows === 0) {
+      return res.status(404).send('Projection not found');
+    }
+
+    res.status(200).send({ message: 'Projection deleted successfully' });
+  });
+});
