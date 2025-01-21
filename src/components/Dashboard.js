@@ -123,9 +123,9 @@ function Dashboard() {
 
   return (
     <div>
-      <h1>Employee Dashboard</h1>
-      <CurrencyTable />
-      <MarketProjections />
+      {/* <h1>Employee Dashboard</h1> */}
+      {/* <CurrencyTable /> */}
+      {/* <MarketProjections /> */}
       <input
         type="text"
         placeholder="Search employees..."
