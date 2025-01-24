@@ -32,6 +32,45 @@ function Dashboard() {
     Remarks: true,
   });
 
+  const handleConvertSalaries = () => {
+    // Create an array of promises for each employee's salary update
+    const updatePromises = employees.map((employee) =>
+      fetch(`http://localhost:5000/api/employees/update-salary-usd/${employee.EmployeeID}`, {
+        method: 'PUT',
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log(data.message);
+        })
+        .catch((error) => {
+          console.error(`Error converting salary for employee ID: ${employee.EmployeeID}`, error);
+        })
+    );
+  
+    // Wait for all update requests to complete
+    Promise.all(updatePromises)
+      .then(() => {
+        alert('Salaries converted successfully!');
+        // After updating, fetch the updated data
+        fetchEmployeeData();
+      })
+      .catch((error) => {
+        console.error('Error updating salaries:', error);
+      });
+  };
+  
+  // Function to fetch employee data from the server
+  const fetchEmployeeData = () => {
+    fetch('http://localhost:5000/api/employees')  // Change this to the correct endpoint
+      .then((response) => response.json())
+      .then((data) => {
+        setEmployees(data);  // Update the state with the new data
+      })
+      .catch((error) => {
+        console.error('Error fetching employee data:', error);
+      });
+  };
+  
   const toggleColumnVisibility = (column) => {
     setColumnVisibility((prevVisibility) => ({
       ...prevVisibility,
@@ -133,7 +172,7 @@ function Dashboard() {
         onChange={(e) => setSearchQuery(e.target.value)}
       />
       <FileUpload />
-
+      <button onClick={handleConvertSalaries}>Convert All Salaries</button>
       {/* Column Visibility Controls */}
       <div>
         <h3>Toggle Column Visibility</h3>

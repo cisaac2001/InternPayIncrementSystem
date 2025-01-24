@@ -36,6 +36,7 @@ const db = mysql.createConnection({
   user: 'root',  // Use your MySQL username
   password: 'asdfj3242lkjfsd234#%%kjfdsj@@kjf34',  // Use your MySQL password
   database: 'salaryincrementsystem',  // Your database name
+  multipleStatements: true,
 });
 
 module.exports = db;
@@ -392,5 +393,26 @@ app.delete('/api/projections/:id', (req, res) => {
     }
 
     res.status(200).send({ message: 'Projection deleted successfully' });
+  });
+});
+
+// PUT endpoint to update salary for an individual employee based on ID
+app.put('/api/employees/update-salary-usd/:id', (req, res) => {
+  const { id } = req.params; // Get the ID from the URL parameter
+  const updateQuery = `
+    UPDATE employees e
+    JOIN conversion_rates cr
+    ON e.SalaryCode = cr.CurrencyCode
+    SET e.CurrentSalaryUSD = e.CurrentSalaryLocal * cr.ConversionRateUSD
+    WHERE e.EmployeeID = ?
+  `;
+
+  db.query(updateQuery, [id], (err, result) => {
+    if (err) {
+      console.error('Error updating salary for employee ID:', id, err);
+      return res.status(500).send({ message: `Error updating salary for employee ID: ${id}` });
+    }
+
+    res.status(200).send({ message: `Salary updated successfully for employee ID: ${id}` });
   });
 });
