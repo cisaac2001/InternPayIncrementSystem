@@ -101,15 +101,15 @@ function insertData(mappedData) {
         EmployeeID, Entity, Name, DateOfJoining, EmploymentType, Designation,
         Location, Team, JobFunction, ManagerName, ManCom, SalaryCode,
         CurrentSalaryLocal, CurrentSalaryUSD, KPIRating, ValuesRating,
-        FinalRating, IncrementEligible, Remarks
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        FinalRating, IncrementEligible, ReasonForIncrement, IncrementPercentage, NewRevisedBaseSalary
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const values = [
       row.EmployeeID, row.Entity, row.Name, row.DateOfJoining, row.EmploymentType, row.Designation,
       row.Location, row.Team, row.JobFunction, row.ManagerName, row.ManCom, row.SalaryCode,
       row.CurrentSalaryLocal, row.CurrentSalaryUSD, row.KPIRating, row.ValuesRating,
-      row.FinalRating, row.IncrementEligible, row.Remarks,
+      row.FinalRating, row.IncrementEligible, row.ReasonForIncrement, row.IncrementPercentage, row.NewRevisedBaseSalary
     ];
 
     db.query(query, values, (err, result) => {
@@ -177,7 +177,9 @@ const headerMapping = {
   'Rating (Values)': 'ValuesRating',
   'Final Rating': 'FinalRating',
   'Eligible (Y/N)': 'IncrementEligible',
-  'Reason for Increment': 'Remarks',
+  'Reason for Increment': 'ReasonForIncrement',
+  'Salary Increment': 'IncrementPercentage',
+  'New Revised Base Salary': 'NewRevisedBaseSalary',
 };
 
 app.get('/api/currencies', (req, res) => {
@@ -245,7 +247,9 @@ app.put('/api/employees/:id', (req, res) => {
     ValuesRating,
     FinalRating,
     IncrementEligible,
-    Remarks,
+    ReasonForIncrement,
+    IncrementPercentage,
+    NewRevisedBaseSalary
   } = req.body;  // Get the updated fields from the request body
 
   // Query to update the employee in the database
@@ -269,7 +273,9 @@ app.put('/api/employees/:id', (req, res) => {
       ValuesRating = ?, 
       FinalRating = ?, 
       IncrementEligible = ?, 
-      Remarks = ?
+      ReasonForIncrement = ?
+      IncrementPercentage = ?
+      NewRevisedBaseSalary = ?
     WHERE EmployeeID = ?`;
 
   // Execute the query
@@ -291,7 +297,9 @@ app.put('/api/employees/:id', (req, res) => {
     ValuesRating, 
     FinalRating, 
     IncrementEligible, 
-    Remarks, 
+    ReasonForIncrement,
+    IncrementPercentage,
+    NewRevisedBaseSalary, 
     id
   ], (err, result) => {
     if (err) {
@@ -416,3 +424,308 @@ app.put('/api/employees/update-salary-usd/:id', (req, res) => {
     res.status(200).send({ message: `Salary updated successfully for employee ID: ${id}` });
   });
 });
+
+app.put('/api/admin/budget-percentage/:id', (req, res) => {
+  const { id } = req.params; // The id parameter to identify the correct row
+  const { percentage } = req.body; // The percentage sent by the admin
+
+  if (!percentage || percentage <= 0 || percentage > 100) {
+      return res.status(400).send('Invalid percentage value');
+  }
+
+  const query = 'UPDATE budget_config SET percentage = ? WHERE id = ?';
+
+  db.query(query, [percentage, id], (err, result) => {
+      if (err) {
+          console.error('Error updating budget percentage:', err);
+          return res.status(500).send({ message: 'Error updating budget percentage' });
+      }
+
+      res.status(200).send({ message: 'Budget percentage updated successfully' });
+  });
+});
+
+app.get('/api/admin/total-budget/:id', (req, res) => {
+  const { id } = req.params; // The id parameter to fetch the specific budget config
+
+  // Step 1: Get the total salary of all employees
+  const getTotalSalaryQuery = 'SELECT SUM(CurrentSalaryUSD) AS totalSalary FROM employees';
+
+  db.query(getTotalSalaryQuery, (err, result) => {
+      if (err) {
+          console.error('Error fetching total salary:', err);
+          return res.status(500).send({ message: 'Error fetching total salary' });
+      }
+
+      const totalSalary = result[0].totalSalary;
+
+      // Step 2: Get the configured budget percentage by id
+      const getPercentageQuery = 'SELECT percentage FROM budget_config WHERE id = ?';
+
+      db.query(getPercentageQuery, [id], (err, result) => {
+          if (err) {
+              console.error('Error fetching budget percentage:', err);
+              return res.status(500).send({ message: 'Error fetching budget percentage' });
+          }
+
+          if (result.length === 0) {
+              return res.status(404).send({ message: 'Budget config not found' });
+          }
+
+          const percentage = result[0].percentage;
+          const budget = (percentage / 100) * totalSalary; // Calculate the budget
+
+          res.status(200).send({
+              message: 'Total budget calculated successfully',
+              totalSalary,
+              budget,
+              percentage
+          });
+      });
+  });
+});
+
+app.get('/api/increment-data', (req, res) => {
+  // Query to calculate increment data
+  const query = `
+  SELECT e.EmployeeID AS id,
+         CASE 
+             WHEN e.Location NOT IN ('India', 'Singapore', 'Philippines') OR e.Location IS NULL THEN 'USA' 
+             ELSE e.Location 
+         END AS Location,  
+         e.CurrentSalaryLocal,  
+         COALESCE(mp.MarketSalaryBenchmark, 
+                  CASE 
+                      WHEN e.Location = 'India' THEN 30000  
+                      WHEN e.Location = 'Singapore' THEN 150000  
+                      WHEN e.Location = 'Philippines' THEN 60000  
+                      WHEN e.Location = 'USA' THEN 80000  
+                      ELSE 80000  
+                  END) AS MarketSalaryBenchmark,  
+         e.FinalRating,
+         (e.CurrentSalaryLocal / 
+             COALESCE(mp.MarketSalaryBenchmark, 
+                      CASE 
+                          WHEN e.Location = 'India' THEN 30000
+                          WHEN e.Location = 'Singapore' THEN 150000
+                          WHEN e.Location = 'Philippines' THEN 60000
+                          WHEN e.Location = 'USA' THEN 80000
+                          ELSE 80000
+                      END)
+         ) AS CompaRatio,
+         CASE
+             WHEN (e.CurrentSalaryLocal / 
+                   COALESCE(mp.MarketSalaryBenchmark, 
+                            CASE 
+                                WHEN e.Location = 'India' THEN 30000
+                                WHEN e.Location = 'Singapore' THEN 150000
+                                WHEN e.Location = 'Philippines' THEN 60000
+                                WHEN e.Location = 'USA' THEN 80000
+                                ELSE 80000
+                            END)
+                   ) > 1.2 THEN 
+                 CASE 
+                     WHEN e.FinalRating BETWEEN 0 AND 0.99 THEN 0
+                     WHEN e.FinalRating BETWEEN 1 AND 1.99 THEN 0
+                     WHEN e.FinalRating BETWEEN 2 AND 2.99 THEN 0
+                     WHEN e.FinalRating BETWEEN 3 AND 3.99 THEN 5
+                     WHEN e.FinalRating BETWEEN 4 AND 5 THEN 7
+                 END
+             WHEN (e.CurrentSalaryLocal / 
+                   COALESCE(mp.MarketSalaryBenchmark, 
+                            CASE 
+                                WHEN e.Location = 'India' THEN 30000
+                                WHEN e.Location = 'Singapore' THEN 150000
+                                WHEN e.Location = 'Philippines' THEN 60000
+                                WHEN e.Location = 'USA' THEN 80000
+                                ELSE 80000
+                            END)
+                   ) BETWEEN 0.8 AND 1.2 THEN 
+                 CASE 
+                     WHEN e.FinalRating BETWEEN 0 AND 0.99 THEN 0
+                     WHEN e.FinalRating BETWEEN 1 AND 1.99 THEN 0
+                     WHEN e.FinalRating BETWEEN 2 AND 2.99 THEN 8
+                     WHEN e.FinalRating BETWEEN 3 AND 3.99 THEN 9
+                     WHEN e.FinalRating BETWEEN 4 AND 5 THEN 10
+                 END
+             WHEN (e.CurrentSalaryLocal / 
+                   COALESCE(mp.MarketSalaryBenchmark, 
+                            CASE 
+                                WHEN e.Location = 'India' THEN 30000
+                                WHEN e.Location = 'Singapore' THEN 150000
+                                WHEN e.Location = 'Philippines' THEN 60000
+                                WHEN e.Location = 'USA' THEN 80000
+                                ELSE 80000
+                            END)
+                   ) < 0.8 THEN 
+                 CASE 
+                     WHEN e.FinalRating BETWEEN 0 AND 0.99 THEN 0
+                     WHEN e.FinalRating BETWEEN 1 AND 1.99 THEN 0
+                     WHEN e.FinalRating BETWEEN 2 AND 2.99 THEN 10
+                     WHEN e.FinalRating BETWEEN 3 AND 3.99 THEN 12
+                     WHEN e.FinalRating BETWEEN 4 AND 5 THEN 15
+                 END
+             ELSE 0
+         END AS IncrementPercentage
+  FROM employees e
+  LEFT JOIN market_projections mp ON e.Designation = mp.Designation AND e.Location = mp.Location;
+  `;
+
+  db.query(query, (err, results) => {
+      if (err) {
+          console.error('Error fetching increment data:', err);
+          return res.status(500).send({ message: 'Error fetching increment data' });
+      }
+
+      // Iterate over results to update the IncrementPercentage in the employees table
+      const updatePromises = results.map((employee) => {
+          const updateQuery = `
+              UPDATE employees 
+              SET IncrementPercentage = ? 
+              WHERE EmployeeID = ?`;
+          return new Promise((resolve, reject) => {
+              db.query(updateQuery, [employee.IncrementPercentage, employee.id], (err) => {
+                  if (err) {
+                      console.error(`Error updating increment for EmployeeID ${employee.id}:`, err);
+                      reject(err);
+                  } else {
+                      resolve();
+                  }
+              });
+          });
+      });
+
+      // Wait for all updates to finish
+      Promise.all(updatePromises)
+          .then(() => {
+              res.status(200).send({
+                  message: 'Increment percentages updated successfully',
+                  data: results,
+              });
+          })
+          .catch((err) => {
+              console.error('Error updating increment percentages:', err);
+              res.status(500).send({ message: 'Error updating increment percentages' });
+          });
+  });
+});
+
+// app.post('/api/calculate-new-salaries/:id', async (req, res) => {
+//   const { id } = req.params; // Get the ID from the request URL
+//   try {
+//       // Step 1: Fetch all employees and their increment percentages
+//       const fetchQuery = `
+//           SELECT EmployeeID, CurrentSalaryUSD, IncrementPercentage 
+//           FROM employees
+//       `;
+//       const [employees] = await db.promise().query(fetchQuery);
+
+//       if (employees.length === 0) {
+//           return res.status(404).send({ message: 'No employees found.' });
+//       }
+
+//       // Step 2: Fetch the total budget for the provided id
+//       const budgetQuery = 'SELECT totalBudget FROM budget_config WHERE id = ?';
+//       const [budgetResult] = await db.promise().query(budgetQuery, [id]);
+
+//       if (budgetResult.length === 0) {
+//           return res.status(404).send({ message: 'Budget configuration not found.' });
+//       }
+
+//       const originalTotalBudget = budgetResult[0].totalBudget;
+//       if (isNaN(originalTotalBudget)) {
+//           return res.status(500).send({ message: 'Invalid total budget value.' });
+//       }
+
+//       let remainingBudget = originalTotalBudget;
+//       let totalIncrementDeducted = 0; // Track total deduction
+
+//       // Step 3: Calculate new salaries and deduct from budget
+//       const updatePromises = employees.map(async (employee) => {
+//           const { EmployeeID, CurrentSalaryUSD, IncrementPercentage } = employee;
+
+//           // Log the values for debugging
+//           console.log(`Processing EmployeeID: ${EmployeeID}, CurrentSalaryUSD: ${CurrentSalaryUSD}, IncrementPercentage: ${IncrementPercentage}`);
+
+//           // Validate IncrementPercentage and CurrentSalaryUSD
+//           if (IncrementPercentage === null || isNaN(IncrementPercentage) || IncrementPercentage < 0) {
+//               console.warn(`Skipping employee ${EmployeeID} due to invalid increment percentage.`);
+//               return; // Skip this employee if invalid
+//           }
+
+//           if (CurrentSalaryUSD === null || isNaN(CurrentSalaryUSD) || CurrentSalaryUSD <= 0) {
+//               console.warn(`Skipping employee ${EmployeeID} due to invalid salary.`);
+//               return; // Skip if the salary is invalid
+//           }
+
+//           // Convert to numbers to avoid any issues with non-number values
+//           const currentSalary = Number(CurrentSalaryUSD);
+//           const incrementPercentage = Number(IncrementPercentage);
+
+//           // Calculate the increment
+//           const incrementAmount = (currentSalary * incrementPercentage) / 100;
+//           console.log(`Calculated IncrementAmount for EmployeeID ${EmployeeID}: ${incrementAmount}`);
+
+//           // Ensure the new base salary is calculated correctly and rounded to 2 decimal places
+//           let newRevisedBaseSalary = currentSalary + incrementAmount;
+
+//           if (!isNaN(newRevisedBaseSalary)) {
+//               newRevisedBaseSalary = parseFloat(newRevisedBaseSalary.toFixed(2)); // Round to 2 decimals
+//               console.log(`Calculated NewRevisedBaseSalary for EmployeeID ${EmployeeID}: ${newRevisedBaseSalary}`);
+//           } else {
+//               console.warn(`Invalid calculation for employee ${EmployeeID}. Skipping.`);
+//               return; // Skip if newRevisedBaseSalary is NaN
+//           }
+
+//           // Deduct increment amount from the remaining budget
+//           remainingBudget -= incrementAmount;
+//           totalIncrementDeducted += incrementAmount;
+
+//           // Update the employee's NewRevisedBaseSalary in the database
+//           const updateQuery = `
+//               UPDATE employees
+//               SET NewRevisedBaseSalary = ?
+//               WHERE EmployeeID = ?
+//           `;
+//           await db.promise().query(updateQuery, [newRevisedBaseSalary, EmployeeID]);
+//       });
+
+//       // Wait for all updates to complete
+//       await Promise.all(updatePromises);
+
+//       // Step 4: Update the remaining budget for the provided id in budget_config
+//       const updateBudgetQuery = `
+//           UPDATE budget_config
+//           SET totalBudget = ?
+//           WHERE id = ?
+//       `;
+//       await db.promise().query(updateBudgetQuery, [remainingBudget, id]);
+
+//       // Step 5: Return the calculation details
+//       const calculationResult = {
+//           originalTotalBudget: originalTotalBudget,
+//           totalIncrementDeducted: totalIncrementDeducted,
+//           remainingBudget: remainingBudget
+//       };
+
+//       // Ensure originalTotalBudget and remainingBudget are valid numbers before calling toFixed
+//       if (!isNaN(calculationResult.originalTotalBudget)) {
+//           calculationResult.originalTotalBudget = calculationResult.originalTotalBudget.toFixed(2);
+//       }
+
+//       if (!isNaN(calculationResult.remainingBudget)) {
+//           calculationResult.remainingBudget = calculationResult.remainingBudget.toFixed(2);
+//       }
+
+//       res.status(200).send({
+//           message: 'New revised base salaries calculated and budget updated.',
+//           calculationResult
+//       });
+//   } catch (error) {
+//       console.error('Error calculating new salaries:', error);
+//       res.status(500).send({ message: 'Error calculating new salaries.' });
+//   }
+// });
+
+
+

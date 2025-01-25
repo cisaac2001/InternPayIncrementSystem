@@ -3,6 +3,8 @@ import * as XLSX from 'xlsx';
 import FileUpload from './FileUpload';
 import CurrencyTable from "./CurrencyTable";
 import MarketProjections from "./MarketProjections";
+import IncrementDataFetcher from "./IncrementDataFetcher";
+import BudgetComponent from "./BudgetComponent";
 
 function Dashboard() {
   const [employees, setEmployees] = useState([]);
@@ -29,7 +31,9 @@ function Dashboard() {
     ValuesRating: true,
     FinalRating: true,
     IncrementEligible: true,
-    Remarks: true,
+    ReasonForIncrement: true,
+    IncrementPercentage: true,
+    NewRevisedBaseSalary: true,
   });
 
   const handleConvertSalaries = () => {
@@ -173,6 +177,8 @@ function Dashboard() {
       />
       <FileUpload />
       <button onClick={handleConvertSalaries}>Convert All Salaries</button>
+      <IncrementDataFetcher />
+      {/* <BudgetComponent /> */}
       {/* Column Visibility Controls */}
       <div>
         <h3>Toggle Column Visibility</h3>
@@ -245,7 +251,14 @@ function Dashboard() {
             {columnVisibility.IncrementEligible && (
               <th onClick={() => sortData('IncrementEligible')}>Increment Eligible</th>
             )}
-            {columnVisibility.Remarks && <th>Remarks</th>}
+            {columnVisibility.ReasonForIncrement && <th>Reason For Increment</th>}
+            {columnVisibility.IncrementPercentage && (
+              <th onClick={() => sortData('IncrementPercentage')}>Increment Percentage</th>
+            )}
+            {columnVisibility.NewRevisedBaseSalary && (
+              <th onClick={() => sortData('NewRevisedBaseSalary')}>New Revised Base Salary</th>
+            )}
+            
             <th>Actions</th>
           </tr>
         </thead>
@@ -504,17 +517,45 @@ function Dashboard() {
                 )}
               </td>
             )}
-            {columnVisibility.Remarks && (
+            {columnVisibility.ReasonForIncrement && (
               <td>
                 {editMode === employee.EmployeeID ? (
                   <input
                     type="text"
-                    name="Remarks"
-                    value={editedEmployee.Remarks || employee.Remarks || ""}
+                    name="ReasonForIncrement"
+                    value={editedEmployee.ReasonForIncrement || employee.ReasonForIncrement || ""}
                     onChange={handleChange}
                   />
                 ) : (
-                  employee.Remarks
+                  employee.ReasonForIncrement
+                )}
+              </td>
+            )}
+            {columnVisibility.IncrementPercentage && (
+              <td>
+                {editMode === employee.EmployeeID ? (
+                  <input
+                    type="text"
+                    name="IncrementPercentage"
+                    value={editedEmployee.IncrementPercentage || employee.IncrementPercentage || ""}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  employee.IncrementPercentage
+                )}
+              </td>
+            )}
+            {columnVisibility.NewRevisedBaseSalary && (
+              <td>
+                {editMode === employee.EmployeeID ? (
+                  <input
+                    type="text"
+                    name="NewRevisedBaseSalary"
+                    value={editedEmployee.NewRevisedBaseSalary || employee.NewRevisedBaseSalary || ""}
+                    onChange={handleChange}
+                  />
+                ) : (
+                  employee.NewRevisedBaseSalary
                 )}
               </td>
             )}

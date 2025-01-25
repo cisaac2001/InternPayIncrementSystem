@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import CurrencyTable from '../src/components/CurrencyTable'; // Assuming these components exist
 import MarketProjections from '../src/components/MarketProjections';
 import Dashboard from '../src/components/Dashboard'; // For managers
+import Budget from './components/Budget';
 
 const App = () => {
   const [userRole, setUserRole] = useState('admin'); // Assume default role is 'admin'
@@ -23,6 +24,7 @@ const App = () => {
       {userRole === 'admin' ? (
         <div>
           <h1>Admin Dashboard</h1>
+          <Budget />
           <CurrencyTable />
           <MarketProjections />
           <Dashboard />
