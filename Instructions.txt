@@ -1,0 +1,57 @@
+MySQL
+Start a server
+If crash, then go to services.msc and manually start MySQL server.
+Under Navigator, Data Import -> Import from Self-Contained File -> sql file
+Set a name for the schema
+
+Compiler
+Node required
+npm install (node modules)
+npm install express mysql cors xlsx multer axios
+
+change server.js host password etc.
+see server and user privileges in mysql for details
+
+node server.js (run the server)
+npm start (open new tab)
+
+
+To test upload function since there is no overwrite:
+TRUNCATE test.employees
+
+Refresh the page to see that there is no data
+Then choose file.. click upload
+Refresh the page to see the data
+
+Run this script to add the salary codes to the database. (based on location (extract information from cell formatting code needed)
+
+-- Disable safe updates
+SET SQL_SAFE_UPDATES = 0;
+
+-- Update SalaryCode based on Location for all employees
+UPDATE employees
+SET SalaryCode = 
+    CASE 
+        WHEN Location = 'USA' THEN 'USD'
+        WHEN Location = 'Singapore' THEN 'SGD'
+        WHEN Location = 'Philippines' THEN 'PHP'
+        WHEN Location = 'India' THEN 'INR'
+        ELSE 'USD'  -- Default to USD if location doesn't match any of the specified ones
+    END;
+
+-- Re-enable safe updates
+SET SQL_SAFE_UPDATES = 1;
+
+Convert All Salaries
+Fetch Increment Data
+Refresh the page to see
+
+
+
+Notes on some components:
+LoginPage.js is not used (abandoned)
+AddCurrencyForm.js is not used (abandoned idea)
+BudgetComponent.js is not used (needs work) 
+	was an attempt to convert all salaries using the calculated increments and take away from the budget.
+server.js
+the function validateAndMapHeaders needs a validation step, only maps out headers now (commented out).
