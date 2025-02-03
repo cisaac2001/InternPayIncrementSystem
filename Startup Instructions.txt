@@ -1,0 +1,70 @@
+MySQL
+Start a server
+If crash, then go to services.msc and manually start MySQL server. (MySQL80 in Windows)
+Under Navigator, Data Import -> Import from Self-Contained File -> sql file
+Set a name for the schema
+
+Compiler
+Node required
+To enable scripting in powershell
+Run powershell as administrator and then enter:
+
+set-executionpolicy remotesigned
+
+Open a terminal in the project folder using a compiler:
+npm install
+npm install express mysql cors xlsx multer axios web-vitals
+
+In server.js, change the host password etc.
+see server and user privileges in mysql for details
+default is localhost and root
+password is the sql password 
+
+In the terminal:
+node server.js (run the server)
+npm start (open new tab)
+You should see the site with the data already there since employees is already inputted with the upload test data.
+
+To test upload function since there is no overwrite:
+Runt this script in SQL (Make sure to click on the schema to select it):
+
+-- Removes all the employee data
+TRUNCATE employees
+
+Refresh the page to see that there is no data
+Then choose file.. click upload
+Refresh the page to see the data
+
+Run this script to add the salary codes to the database. (based on location (extract information from cell formatting code needed)):
+
+-- Disable safe updates
+SET SQL_SAFE_UPDATES = 0;
+
+-- Update SalaryCode based on Location for all employees
+UPDATE employees
+SET SalaryCode = 
+    CASE 
+        WHEN Location = 'USA' THEN 'USD'
+        WHEN Location = 'Singapore' THEN 'SGD'
+        WHEN Location = 'Philippines' THEN 'PHP'
+        WHEN Location = 'India' THEN 'INR'
+        ELSE 'USD'  -- Default to USD if location doesn't match any of the specified ones
+    END;
+
+-- Re-enable safe updates
+SET SQL_SAFE_UPDATES = 1;
+
+Convert All Salaries
+Fetch Increment Data
+Refresh the page to see results
+
+
+
+Notes on some components:
+LoginPage.js is not used (abandoned)
+AddCurrencyForm.js is not used (abandoned idea)
+BudgetComponent.js is not used (needs work) 
+	was an attempt to convert all salaries using the calculated increments and take away from the budget.
+server.js
+the function validateAndMapHeaders needs a validation step, only maps out headers now (commented out).
+the function for calculating new salaries is commented out
